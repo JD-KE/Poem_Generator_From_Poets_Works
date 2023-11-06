@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,34 +9,19 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ReadingPoem {
-    public static void main(String[] args) throws Exception {
+    public static Map<String, Map<String, Long>> readPoem(File poem) throws Exception {
 
-         try (FileReader fr = new FileReader(args[0])) {
+         try (FileReader fr = new FileReader(poem)) {
             BufferedReader br = new BufferedReader(fr);
 
-            Map<String, Map<String, Long>> name = br.lines()
+            Map<String, Map<String, Long>> nextWordDict = br.lines()
             // Clean the line
             .map(line -> line.trim().replaceAll("[^\\sa-zA-Z0-9]", ""))
             // Remove empty lines
             .filter(line -> line.length() > 0)
             // line -> array of words
             .map(line -> line.split(" "))
-            // .map(words ->{
-            //     String[][] wordPairs = new String[words.length][2];
-            //     for(int i = 0; i < words.length; i++) {
-            //         String[] wordPair = new String[2];
-            //         if (i != words.length - 1) {
-            //             wordPair[0] = words[i]; wordPair[1] = words[i+1];
-            //         } else {
-            //             wordPair[0] = words[i]; wordPair[1] = "\\n";
-            //         }
-            //         wordPairs[i] = wordPair;
-            //     }
-            //     return wordPairs;
-
-            // })
-            // .flatMap(wordPairs ->Stream.of(wordPairs))
-            // .peek(System.out::println)
+            // array of words - array of word pairs
             .map(words -> {
                 String[] wordPairs = new String[words.length];
                 for(int i = 0; i < words.length; i++) {
@@ -49,13 +35,16 @@ public class ReadingPoem {
                 }
                 return wordPairs;
             })
+            // array of word pairs -> word pair arrays
             .flatMap(wordPairs -> Stream.of(wordPairs))
-            .peek(System.out::println)
+            .map(wordPair -> wordPair.toLowerCase())
+            // .peek(System.out::println)
             .map(wordPair -> wordPair.split(" "))
+            // word pair array -> map of word : (map of next word: count)
             .collect(Collectors.groupingBy(wordPair -> wordPair[0], Collectors.groupingBy(wordPair -> wordPair[1], Collectors.counting())))
             ;
 
-            System.out.println(name);
+            return nextWordDict;
          }
         
     }
