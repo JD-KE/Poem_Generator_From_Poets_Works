@@ -16,11 +16,29 @@ public class ReadingPoem {
 
             Map<String, Map<String, Long>> nextWordDict = br.lines()
             // Clean the line
-            .map(line -> line.trim().replaceAll("[^\\sa-zA-Z0-9]", ""))
+            .map(line -> line.trim().replaceAll("[^\\sa-zA-Z0-9]", "").toLowerCase())
             // Remove empty lines
             .filter(line -> line.length() > 0)
             // line -> array of words
-            .map(line -> line.split(" "))
+            .map(line -> line.split("\\s+"))
+            // .peek(wordPair -> {
+            //     for(String word: wordPair){
+            //         System.out.printf("%s /",word);
+            //     }
+            //     System.out.println("\n");
+            // })
+            // .map(words -> {
+            //     for(int i = 0; i < words.length; i++) {
+            //         words[i] = words[i].trim();
+            //     }
+            //     return words;
+            // })
+            // .peek(wordPair -> {
+            //     for(String word: wordPair){
+            //         System.out.printf("%s /",word);
+            //     }
+            //     System.out.println("\n");
+            // })
             // array of words - array of word pairs
             .map(words -> {
                 String[] wordPairs = new String[words.length];
@@ -37,9 +55,15 @@ public class ReadingPoem {
             })
             // array of word pairs -> word pair arrays
             .flatMap(wordPairs -> Stream.of(wordPairs))
-            .map(wordPair -> wordPair.toLowerCase())
+            // .map(wordPair -> wordPair.toLowerCase())
             // .peek(System.out::println)
             .map(wordPair -> wordPair.split(" "))
+            // .peek(wordPair -> {
+            //     for(String word: wordPair){
+            //         System.out.printf("%s ",word);
+            //     }
+            //     System.out.println("\n");
+            // })
             // word pair array -> map of word : (map of next word: count)
             .collect(Collectors.groupingBy(wordPair -> wordPair[0], Collectors.groupingBy(wordPair -> wordPair[1], Collectors.counting())))
             ;

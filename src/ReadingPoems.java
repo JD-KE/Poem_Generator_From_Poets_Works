@@ -1,5 +1,8 @@
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -7,6 +10,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ReadingPoems {
 
@@ -44,21 +48,27 @@ public class ReadingPoems {
             File[] files = poemFile.listFiles();
             Map<String,Map<String,Long>> tempDict = new TreeMap<>();
 
-            for (File file : files) {
+            // initial attempt: works
+            // for (File file : files) {
+            //     // System.out.println(file.getName());
                 
-                // merge Map from next file to temp file. v1 and v2, and u1 and u2 are how duplicate keys and their values are
-                //  handled, default is replacement with the mapping function
-                Map<String, Map<String, Long>> nextDict = ReadingPoem.readPoem(file);
-                nextDict.forEach((word, nextWordMap) -> 
-                    tempDict.merge(word, nextWordMap, (v1, v2) -> 
-                        {
-                            v2.forEach((key, value) ->
-                                v1.merge(key, value, (u1, u2) -> u1 + u2 ));
-                            return v1;
-                        }));
+            //     // merge Map from next file to temp file. v1 and v2, and u1 and u2 are how duplicate keys and their values are
+            //     //  handled, default is replacement with the mapping function
+            //     Map<String, Map<String, Long>> nextDict = ReadingPoem.readPoem(file);
+            //     nextDict.forEach((word, nextWordMap) -> 
+            //         tempDict.merge(word, nextWordMap, (v1, v2) -> 
+            //             {
+            //                 v2.forEach((key, value) ->
+            //                     v1.merge(key, value, (u1, u2) -> u1 + u2 ));
+            //                 return v1;
+            //             }));
 
-            }
-            nextWordDict = tempDict;
+            // }
+            // nextWordDict = tempDict;
+
+            // trying to do all files at once; method is at the bottom of this file
+
+            nextWordDict = readAllPoems(files);
         }
 
         // sort nextwords by number of times they appear
@@ -135,5 +145,75 @@ public class ReadingPoems {
         }
         return dict;
     }
-    
+
+
+    public static Map<String, Map<String, Long>> readAllPoems (File[] files) {
+
+        Map<String, Map<String, Long>> nextWordDict = Arrays.stream(files)
+            .filter(file -> file.isFile() && file.getName().endsWith(".txt"))
+            .map(file -> {
+                try {
+                    return Files.readAllLines(file.toPath());
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                return null;
+            })
+            .filter(list -> list != null)
+            .flatMap(listOfFile -> listOfFile.stream())
+            .map(line -> line.trim().replaceAll("[^\\sa-zA-Z0-9]", "").toLowerCase())
+            
+            .filter(line -> line.length() > 0)
+            
+            .map(line -> line.split("\\s+"))
+            // .peek(wordPair -> {
+            //     for(String word: wordPair){
+            //         System.out.printf("%s /",word);
+            //     }
+            //     System.out.println("\n");
+            // })
+            // .map(words -> {
+            //     for(int i = 0; i < words.length; i++) {
+            //         words[i] = words[i].trim();
+            //     }
+            //     return words;
+            // })
+            // .peek(wordPair -> {
+            //     for(String word: wordPair){
+            //         System.out.printf("%s /",word);
+            //     }
+            //     System.out.println("\n");
+            // })
+            // array of words - array of word pairs
+            .map(words -> {
+                String[] wordPairs = new String[words.length];
+                for(int i = 0; i < words.length; i++) {
+                    String wordPair;
+                    if (i != words.length - 1) {
+                        wordPair = String.format("%s %s", words[i], words[i+1]);
+                    } else {
+                        wordPair = String.format("%s %s", words[i], "\\n");;
+                    }
+                    wordPairs[i] = wordPair;
+                }
+                return wordPairs;
+            })
+            // array of word pairs -> word pair arrays
+            .flatMap(wordPairs -> Stream.of(wordPairs))
+            // .map(wordPair -> wordPair.toLowerCase())
+            // .peek(System.out::println)
+            .map(wordPair -> wordPair.split(" "))
+            // .peek(wordPair -> {
+            //     for(String word: wordPair){
+            //         System.out.printf("%s ",word);
+            //     }
+            //     System.out.println("\n");
+            // })
+            // word pair array -> map of word : (map of next word: count)
+            .collect(Collectors.groupingBy(wordPair -> wordPair[0], Collectors.groupingBy(wordPair -> wordPair[1], Collectors.counting())))
+            ;
+        
+            return nextWordDict;
+    }
 }
